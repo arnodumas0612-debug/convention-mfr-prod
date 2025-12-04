@@ -29,7 +29,7 @@ export const CreateUserModal = ({ onClose, onSuccess }: CreateUserModalProps) =>
 
     setLoading(true);
 
-    const { data, error, credentials: creds } = await createUser({
+    const { error, credentials: creds } = await createUser({
       firstname,
       lastname,
       birthdate,
@@ -49,26 +49,27 @@ export const CreateUserModal = ({ onClose, onSuccess }: CreateUserModalProps) =>
   };
 
   const copyCredentials = () => {
-    const roleLabel = {
+    const roleLabel: Record<string, string> = {
       super_admin: 'Super Administrateur',
-      admin: 'Administrateur / Responsable',
+      admin: 'Administrateur',
       responsable_classe: 'Responsable de classe',
       famille: 'Famille'
-    }[credentials?.role || 'famille'];
+    };
+    const displayRole = roleLabel[credentials?.role || 'famille'] || credentials?.role || 'Famille';
 
-    const text = `Rôle: ${roleLabel}\nLogin: ${credentials?.login}\nMot de passe: ${credentials?.password}`;
+    const text = `Rôle: ${displayRole}\nLogin: ${credentials?.login}\nMot de passe: ${credentials?.password}`;
     navigator.clipboard.writeText(text);
     showSuccess('Identifiants copiés !');
   };
 
   const getRoleLabel = (r: string) => {
-    const labels = {
+    const labels: Record<string, string> = {
       super_admin: '👑 Super Administrateur',
-      admin: '⚙️ Administrateur / Responsable',
-      responsable_classe: '📚 Responsable de classe',
-      famille: '👨‍👩‍👧 Famille'
+      admin: '⚙️ Administrateur',
+      responsable_classe: '👨‍🏫 Responsable de classe',
+      famille: '👤 Famille'
     };
-    return labels[r as keyof typeof labels] || r;
+    return labels[r] || r;
   };
 
   if (credentials) {
@@ -144,9 +145,9 @@ export const CreateUserModal = ({ onClose, onSuccess }: CreateUserModalProps) =>
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               required
             >
-              <option value="famille">👨‍👩‍👧 Famille</option>
-              <option value="admin">⚙️ Administrateur / Responsable</option>
-              <option value="responsable_classe">📚 Responsable de classe</option>
+              <option value="famille">👤 Famille</option>
+              <option value="responsable_classe">👨‍🏫 Responsable de classe</option>
+              <option value="admin">⚙️ Administrateur</option>
               <option value="super_admin">👑 Super Administrateur</option>
             </select>
           </div>

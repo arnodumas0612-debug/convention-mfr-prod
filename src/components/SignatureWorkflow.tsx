@@ -44,7 +44,19 @@ export function SignatureWorkflow({ convention, onUpdate }: SignatureWorkflowPro
   };
 
   const hasSignature = (role: Signature['signer_role']) => {
-    return signatures.some(sig => sig.signer_role === role);
+    return signatures.some(sig => sig.signer_role === role && sig.signed_at !== null);
+  };
+
+  const canSign = (role: Signature['signer_role']) => {
+    const signerIndex = signersConfig.findIndex(s => s.role === role);
+    if (signerIndex === 0) return true;
+
+    for (let i = 0; i < signerIndex; i++) {
+      if (!hasSignature(signersConfig[i].role)) {
+        return false;
+      }
+    }
+    return true;
   };
 
   const openSignaturePad = (role: Signature['signer_role'], name: string) => {
@@ -64,6 +76,7 @@ export function SignatureWorkflow({ convention, onUpdate }: SignatureWorkflowPro
           signer_role: currentSigner.role,
           signer_name: currentSigner.name,
           signature_data: signatureData,
+          signed_at: new Date().toISOString(),
           ip_address: '',
           user_agent: navigator.userAgent,
         });
@@ -72,14 +85,21 @@ export function SignatureWorkflow({ convention, onUpdate }: SignatureWorkflowPro
 
       await loadSignatures();
 
-      const allSigned = signersConfig.every(s =>
-        hasSignature(s.role) || s.role === currentSigner.role
-      );
+      // Récupérer toutes les signatures à jour
+      const { data: allSignatures } = await supabase
+        .from('signatures')
+        .select('*')
+        .eq('convention_id', convention.id);
 
-      const directorSigned = currentSigner.role === 'chef_etablissement' ||
-                            signatures.some(sig => sig.signer_role === 'chef_etablissement');
+      // Vérifier si toutes les signatures requises ont signed_at rempli
+      const completedRoles = allSignatures
+        ?.filter(s => s.signed_at !== null)
+        .map(s => s.signer_role) || [];
 
-      if (allSigned && directorSigned) {
+      const requiredRoles = signersConfig.map(s => s.role);
+      const allSigned = requiredRoles.every(role => completedRoles.includes(role));
+
+      if (allSigned) {
         await supabase
           .from('conventions')
           .update({ status: 'ready_to_print' })
@@ -118,15 +138,16 @@ export function SignatureWorkflow({ convention, onUpdate }: SignatureWorkflowPro
         </div>
 
         <div className="space-y-4">
-          {signersConfig.map(signer => {
+          {signersConfig.map((signer, index) => {
             const signed = hasSignature(signer.role);
             const signature = signatures.find(s => s.signer_role === signer.role);
+            const canSignNow = canSign(signer.role);
 
             return (
               <div
                 key={signer.role}
                 className={`border-2 rounded-lg p-4 transition ${
-                  signed ? 'border-green-500 bg-green-50' : 'border-gray-200'
+                  signed ? 'border-green-500 bg-green-50' : canSignNow ? 'border-blue-200 bg-blue-50' : 'border-gray-200 bg-gray-50'
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -138,12 +159,20 @@ export function SignatureWorkflow({ convention, onUpdate }: SignatureWorkflowPro
                         <Clock className="w-6 h-6 text-gray-400" />
                       )}
                       <div>
-                        <h3 className="font-semibold text-gray-900">{signer.label}</h3>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-gray-500 bg-white px-2 py-0.5 rounded">#{index + 1}</span>
+                          <h3 className="font-semibold text-gray-900">{signer.label}</h3>
+                        </div>
                         <p className="text-sm text-gray-600">{signer.name}</p>
                         {signature && (
                           <p className="text-xs text-gray-500 mt-1">
                             Signé le {new Date(signature.signed_at!).toLocaleDateString('fr-FR')} à{' '}
                             {new Date(signature.signed_at!).toLocaleTimeString('fr-FR')}
+                          </p>
+                        )}
+                        {!signed && !canSignNow && (
+                          <p className="text-xs text-orange-600 mt-1">
+                            ⏳ En attente de la signature précédente
                           </p>
                         )}
                       </div>
@@ -160,11 +189,16 @@ export function SignatureWorkflow({ convention, onUpdate }: SignatureWorkflowPro
                     {!signed && (
                       <button
                         onClick={() => openSignaturePad(signer.role, signer.name)}
-                        disabled={loading}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
+                        disabled={loading || !canSignNow}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${
+                          canSignNow && !loading
+                            ? 'bg-blue-600 text-white hover:bg-blue-700'
+                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        }`}
+                        title={!canSignNow ? 'Attendez que les signatures précédentes soient complétées' : 'Cliquez pour signer'}
                       >
                         <PenTool className="w-4 h-4" />
-                        Signer
+                        {canSignNow ? 'Signer' : 'En attente'}
                       </button>
                     )}
                   </div>

@@ -41,8 +41,7 @@ export const SuperAdminPage = () => {
     const labels = {
       super_admin: '👑 Super Admin',
       admin: '⚙️ Admin',
-      responsable_classe: '📚 Responsable',
-      famille: '👨‍👩‍👧 Famille'
+      user: '👤 Utilisateur'
     };
     return labels[role as keyof typeof labels] || role;
   };
@@ -51,10 +50,9 @@ export const SuperAdminPage = () => {
     const colors = {
       super_admin: 'bg-purple-100 text-purple-700 border-purple-300',
       admin: 'bg-blue-100 text-blue-700 border-blue-300',
-      responsable_classe: 'bg-green-100 text-green-700 border-green-300',
-      famille: 'bg-gray-100 text-gray-700 border-gray-300'
+      user: 'bg-gray-100 text-gray-700 border-gray-300'
     };
-    return colors[role as keyof typeof colors] || colors.famille;
+    return colors[role as keyof typeof colors] || colors.user;
   };
 
   if (loading) {

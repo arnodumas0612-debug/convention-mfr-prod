@@ -1,5 +1,6 @@
 import { Navigate } from 'react-router-dom';
 import { useAuthContext } from '../../app/AuthProvider';
+import { Spinner } from '../common/Spinner';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -8,17 +9,10 @@ interface ProtectedRouteProps {
 export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, userProfile, loading } = useAuthContext();
 
-  // TODO: Réactiver l'authentification
-  // Mode développement : accès sans authentification
-  return <>{children}</>;
-
-  /* Authentication temporairement désactivée
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
-        <div className="bg-white rounded-lg shadow-xl p-8">
-          <p className="text-gray-600">Chargement...</p>
-        </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <Spinner size="lg" />
       </div>
     );
   }
@@ -28,5 +22,4 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   }
 
   return <>{children}</>;
-  */
 };

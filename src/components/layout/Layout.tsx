@@ -7,12 +7,6 @@ export const Layout = () => {
   const location = useLocation();
   const { userProfile, signOut } = useAuthContext();
 
-  // TODO: Réactiver l'authentification - Mode développement
-  const devUserProfile = {
-    full_name: 'Admin (mode dev)',
-    role: 'super_admin'
-  };
-
   const isActive = (path: string) => {
     if (path === '/') {
       return location.pathname === '/';
@@ -21,11 +15,8 @@ export const Layout = () => {
   };
 
   const handleSignOut = async () => {
-    // TODO: Réactiver l'authentification
-    // Mode développement : ne fait rien
-    console.log('Déconnexion désactivée en mode dev');
-    // await signOut();
-    // navigate('/login');
+    await signOut();
+    navigate('/login');
   };
 
   return (
@@ -65,24 +56,24 @@ export const Layout = () => {
                 <Users className="w-4 h-4" />
                 Admin
               </button>
-              {(userProfile?.role === 'super_admin' || devUserProfile.role === 'super_admin') && (
+              {userProfile?.role === 'super_admin' && (
                 <button
                   onClick={() => navigate('/super-admin')}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg transition ${
-                    isActive('/super-admin') ? 'bg-purple-600 text-white' : 'text-gray-700 hover:bg-gray-100'
+                    isActive('/super-admin') ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100'
                   }`}
                 >
                   <Settings className="w-4 h-4" />
                   Utilisateurs
                 </button>
               )}
-              {(userProfile || devUserProfile) && (
+              {userProfile && (
                 <>
                   <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg">
                     <User className="w-4 h-4 text-gray-600" />
                     <div className="text-left">
-                      <p className="text-sm font-semibold text-gray-900">{userProfile?.full_name || devUserProfile.full_name}</p>
-                      <p className="text-xs text-gray-600 capitalize">{(userProfile?.role || devUserProfile.role).replace('_', ' ')}</p>
+                      <p className="text-sm font-semibold text-gray-900">{userProfile.full_name}</p>
+                      <p className="text-xs text-gray-600 capitalize">{userProfile.role.replace('_', ' ')}</p>
                     </div>
                   </div>
                   <button

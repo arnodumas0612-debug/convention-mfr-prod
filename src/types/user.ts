@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'chef_etablissement' | 'responsable_classe' | 'eleve' | 'maitre_stage' | 'parent';
+export type UserRole = 'super_admin' | 'admin' | 'user';
 
 export interface AppUser {
   id: string;
@@ -6,4 +6,5 @@ export interface AppUser {
   full_name: string;
   role: UserRole;
   created_at?: string;
+  student_class?: string;
 }

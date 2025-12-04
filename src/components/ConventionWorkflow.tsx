@@ -1,22 +1,21 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, ArrowRight, Save, PenTool, CheckCircle, Download } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Save, PenTool, CheckCircle } from 'lucide-react';
 import { Convention, StagePeriod, Signature } from '../types/convention';
 import { SignaturePad } from './SignaturePad';
 import { supabase } from '../lib/supabase';
-import { downloadConvention } from '../utils/conventionDocGenerator';
+import { generateConventionDocx } from '../services/docxService';
 import { getConventionType } from '../utils/conventionTypeHelper';
 import { showSuccess, showError, showLoading, dismissToast } from '../lib/utils/toast';
-import { Spinner } from './common/Spinner';
 import { updateConventionStatusAfterDirectorSignature } from '../features/signatures/utils/signatureValidation';
 import { DownloadConventionButton } from './conventions/DownloadConventionButton';
 
 interface ConventionWorkflowProps {
-  onComplete: (conventionId: string) => void;
+  onComplete?: (conventionId: string) => void;
   onCancel: () => void;
   initialClass?: string;
 }
 
-export function ConventionWorkflow({ onComplete, onCancel, initialClass }: ConventionWorkflowProps) {
+export function ConventionWorkflow({ onComplete: _onComplete, onCancel, initialClass }: ConventionWorkflowProps) {
   const [step, setStep] = useState(1);
   const [convention, setConvention] = useState<Convention>({
     status: 'draft',
@@ -27,7 +26,6 @@ export function ConventionWorkflow({ onComplete, onCancel, initialClass }: Conve
     { period_number: 1, start_date: '', end_date: '', daily_hours: '' }
   ]);
   const [signatures, setSignatures] = useState<{ [key: string]: string }>({});
-  const [signatureObjects, setSignatureObjects] = useState<{ [key: string]: Signature }>({});
   const [showSignaturePad, setShowSignaturePad] = useState(false);
   const [currentSigner, setCurrentSigner] = useState<{
     role: Signature['signer_role'];
@@ -63,13 +61,10 @@ export function ConventionWorkflow({ onComplete, onCancel, initialClass }: Conve
 
     if (!error && data) {
       const sigMap: { [key: string]: string } = {};
-      const sigObjMap: { [key: string]: Signature } = {};
       data.forEach(sig => {
         sigMap[sig.signer_role] = sig.signature_data;
-        sigObjMap[sig.signer_role] = sig;
       });
       setSignatures(sigMap);
-      setSignatureObjects(sigObjMap);
     }
   };
 
@@ -217,11 +212,17 @@ export function ConventionWorkflow({ onComplete, onCancel, initialClass }: Conve
         .eq('convention_id', savedConventionId)
         .order('period_number');
 
-      await downloadConvention(
-        convention,
-        periodsData || periods,
-        signatureObjects
-      );
+      const { data: signaturesData } = await supabase
+        .from('signatures')
+        .select('*')
+        .eq('convention_id', savedConventionId);
+
+      const conventionWithPeriods = {
+        ...convention,
+        stage_periods: periodsData || periods,
+      };
+
+      await generateConventionDocx(conventionWithPeriods, signaturesData || []);
 
       dismissToast(toastId);
       showSuccess('Document téléchargé avec succès !');

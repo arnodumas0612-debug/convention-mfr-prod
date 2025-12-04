@@ -27,7 +27,9 @@ export const conventionSchema = z.object({
   student_birthdate: z.string().min(1, 'Date de naissance requise'),
   student_address: z.string().min(5, 'Adresse requise'),
   student_class: z.string().min(1, 'Classe requise'),
-  student_gender: z.enum(['M', 'F'], { errorMap: () => ({ message: 'Sélectionnez un genre' }) }),
+  student_gender: z.enum(['M', 'F'], {
+    message: 'Sélectionnez un genre'
+  }),
 
   is_minor: z.boolean(),
   guardian_lastname: z.string().optional(),
