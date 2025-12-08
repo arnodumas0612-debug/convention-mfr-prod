@@ -69,6 +69,14 @@ export function SignatureWorkflow({ convention, onUpdate }: SignatureWorkflowPro
 
     setLoading(true);
     try {
+      console.log('🔴 DÉBUT SAVESIGNATURE - currentSigner:', currentSigner);
+      console.log('🔴 DATA À INSÉRER:', {
+        convention_id: convention.id,
+        signer_role: currentSigner.role,
+        signer_name: currentSigner.name,
+        signed_at: new Date().toISOString()
+      });
+
       const { error } = await supabase
         .from('signatures')
         .insert({
@@ -81,6 +89,8 @@ export function SignatureWorkflow({ convention, onUpdate }: SignatureWorkflowPro
           user_agent: navigator.userAgent,
         });
 
+      console.log('🔴 APRÈS INSERT - error:', error);
+
       if (error) throw error;
 
       await loadSignatures();
@@ -91,6 +101,8 @@ export function SignatureWorkflow({ convention, onUpdate }: SignatureWorkflowPro
         .select('*')
         .eq('convention_id', convention.id);
 
+      console.log('🔴 TOUTES LES SIGNATURES:', allSignatures);
+
       // Vérifier si toutes les signatures requises ont signed_at rempli
       const completedRoles = allSignatures
         ?.filter(s => s.signed_at !== null)
@@ -99,23 +111,28 @@ export function SignatureWorkflow({ convention, onUpdate }: SignatureWorkflowPro
       const requiredRoles = signersConfig.map(s => s.role);
       const allSigned = requiredRoles.every(role => completedRoles.includes(role));
 
+      console.log('🔴 ROLES COMPLÉTÉS:', completedRoles);
+      console.log('🔴 TOUS SIGNÉS?', allSigned);
+
       if (allSigned) {
         await supabase
           .from('conventions')
           .update({ status: 'ready_to_print' })
           .eq('id', convention.id);
+        console.log('🔴 STATUT MIS À JOUR: ready_to_print');
       } else {
         await supabase
           .from('conventions')
           .update({ status: 'pending_signatures' })
           .eq('id', convention.id);
+        console.log('🔴 STATUT MIS À JOUR: pending_signatures');
       }
 
       onUpdate();
       setShowSignaturePad(false);
       setCurrentSigner(null);
     } catch (error) {
-      console.error('Error saving signature:', error);
+      console.error('🔴 ERREUR:', error);
       alert('Erreur lors de l\'enregistrement de la signature');
     } finally {
       setLoading(false);
