@@ -68,6 +68,7 @@ export function SignatureWorkflow({ convention, onUpdate }: SignatureWorkflowPro
     if (!currentSigner || !convention.id) return;
 
     setLoading(true);
+    // DEBUG: Force deploy 2025-12-08 - test signature avec console.log
     try {
       console.log('🔴 DÉBUT SAVESIGNATURE - currentSigner:', currentSigner);
       console.log('🔴 DATA À INSÉRER:', {
